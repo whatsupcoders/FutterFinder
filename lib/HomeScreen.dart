@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:charts_flutter/flutter.dart' as charts;
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'contact.dart';
-import 'ContactDetails.dart';
+import 'Events.dart';
+import 'dart:async';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'EventDetails.dart';
 
 class HomeScreen extends StatefulWidget {
   final Widget child;
@@ -52,7 +56,18 @@ class _HomeScreenState extends State<HomeScreen> {
     _generateData();
   }
 
-
+ List<Events> eventdetails = [];
+  Future<List<Events>> _eventDetails() async {
+    var data =await http.get("https://my.api.mockaroo.com/event_details.json?key=efdf32c0");
+    var jsonData = json.decode(data.body);
+    
+    for (var eventval in jsonData) {
+      Events events = Events(eventval['event_name'], eventval['event_description'],eventval['event_date'], 
+          eventval['event_location'],eventval['eventImage']);
+      eventdetails.add(events);
+    }
+    return eventdetails;
+  }
   @override
   Widget build(BuildContext context) {
 
@@ -173,7 +188,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Column(
                       children: <Widget>[
                         Text(
-                            'International Flutter Developer ',style: TextStyle(fontSize: 24.0,fontWeight: FontWeight.bold),),
+                            'International Flutter Developers ',style: TextStyle(fontSize: 24.0,fontWeight: FontWeight.bold),),
                             SizedBox(height: 10.0,),
                         Expanded(
                           child: charts.PieChart(
@@ -211,13 +226,44 @@ class _HomeScreenState extends State<HomeScreen> {
                       .toList(),
                 ),
               ),
-               Container(
-                child: ListView(
-                  scrollDirection: Axis.vertical,
-                  children: contacts.map((contact) => ProfileList(contact))
-                      .toList(),
-                ),
+
+               SingleChildScrollView(
+          child: Column(
+            children: <Widget>[
+              FutureBuilder(
+                future: _eventDetails(),
+                builder: (BuildContext context, AsyncSnapshot snapshot) {
+                  if (snapshot.data != null) {
+                    return Container(
+                      height: MediaQuery.of(context).size.height,
+                      color: Color(0xfffF7F7F7),
+                      child: ListView.builder(
+                        itemCount: snapshot.data.length,
+                        itemBuilder: (BuildContext context, int index) {
+                          return EventDetails(
+                              snapshot.data[index],
+                              snapshot.data[index].eventname,
+                              snapshot.data[index].eventdetails,
+                              snapshot.data[index].eventdate,
+                              snapshot.data[index].eventlocation,
+                                snapshot.data[index].eventImage,
+                              );
+                        },
+                      ),
+                    );
+                  } else {
+                    return Container(
+                      child: Center(
+                        child: Text("Loading"),
+                      ),
+                    );
+                  }
+                },
               ),
+            ],
+          ),
+        ),
+
             ],
           ),
         ),
@@ -225,8 +271,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
- 
 }
+
 
 
 class Task {
